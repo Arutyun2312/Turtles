@@ -2,6 +2,7 @@ import numpy as np
 import arcade
 from game_objects.empty import EmptySpace
 from game_objects.grid_object import GridObject
+from game_objects.obstacle import Obstacle
 
 def empty(n: int):
     return list(map(lambda _: EmptySpace(), range(n)))
@@ -86,3 +87,6 @@ class Grid:
 
                     spriteList.append(node.sprite)
         spriteList.draw()
+    
+    def create_astar_maze(self):
+        return list(map(lambda row : list(map(lambda o : bool(isinstance(o, Obstacle)), row)), self.grid))
