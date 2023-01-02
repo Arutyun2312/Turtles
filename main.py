@@ -1,52 +1,69 @@
 import arcade
-import arcade.gui
+from game_objects.grid_object import GridObject
 from game_objects.grid import Grid
 from game_objects.turtle import Turtle
 from game_objects.obstacle import Obstacle
 from game_objects.apple import Apple
 from astar import astar
-from ui.main import MainUI
+from ui.main_ui import create_main_ui
+from utils import in_rect
+from ui.game_object_ui import create_game_object_ui
+from ui.maze_presets import presets
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 
 class MyGame(arcade.Window):
 
     def __init__(self, width, height):
         super().__init__(width, height)
         self.grid = Grid(10, 10)
-        turtle = Turtle('hi')
-        self.grid.set_position(turtle, 1, 2)
-        # apple_block = [(4, 5), (6, 5), (5, 4)]
-        # Set obstacles here :)
-        obstacles = [(0, 0), (0, 2), (0, 4), (0, 6), (1, 1), (1, 3)]
-        for x, y in obstacles:
-            self.grid.set_position(Obstacle(), x, y)
+        self.grid.offset_x = 250
+        self.grid.offset_y = SCREEN_HEIGHT - Grid.px_height * self.grid.height - 30
         
-        apple = Apple()
-        self.grid.set_position(apple, 5, 5)
+        presets[1].setup_grid(self.grid)
         
-        def on_calculate_path_click(_):
-            self.grid.marked = astar(self.grid.create_astar_maze(), self.grid.get_position(turtle), self.grid.get_position(apple))
-
-        self.mainUI = MainUI(
-            lambda _ : self.grid.move_up(turtle),
-            lambda _ : self.grid.move_down(turtle),
-            lambda _ : self.grid.move_right(turtle),
-            lambda _ : self.grid.move_left(turtle),
-            on_calculate_path_click
-        )
-        arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
+        self.selectedUI: Optional[GridObject] = None
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+        self.create_ui()
 
     def on_draw(self):
-        self.clear()
-        arcade.start_render()
-        self.mainUI.draw()
-        self.grid.draw(20, SCREEN_HEIGHT - Grid.px_height * self.grid.height - 30)
+        self.clear(arcade.color.DARK_BLUE_GRAY)
+        self.manager.draw()
+        self.grid.draw()
+
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        for obj_x, obj_y, obj in self.grid.objects():
+            if not obj.clickable: continue
+            obj_x, obj_y = self.grid.get_px_position(obj_x, obj_y)
+            obj_x -= Grid.px_width / 2
+            obj_y -= Grid.px_height / 2
+            if not in_rect(obj_x, obj_y, Grid.px_width, Grid.px_height, (x, y)): continue
+            self.selectedUI = obj
+            self.create_ui()
+            return
+
+    def create_ui(self):
+        self.manager.clear()
+        self.manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="left",
+                anchor_y="center_y",
+                child=create_main_ui()
+            )
+        )
+        if self.selectedUI:
+            self.manager.add(
+                arcade.gui.UIAnchorWidget(
+                    anchor_x="right",
+                    anchor_y="center_y",
+                    child=create_game_object_ui(self.grid, self.selectedUI)
+                )
+            )
 
     def update(self, delta_time):
         """ All the logic to move, and the game logic goes here. """
         pass
-
 
 game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT)
 arcade.run()
