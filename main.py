@@ -1,10 +1,6 @@
 import arcade
 from game_objects.grid_object import GridObject
 from game_objects.grid import Grid
-from game_objects.turtle import Turtle
-from game_objects.obstacle import Obstacle
-from game_objects.apple import Apple
-from astar import astar
 from ui.main_ui import create_main_ui
 from utils import in_rect
 from ui.game_object_ui import create_game_object_ui
@@ -14,15 +10,15 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 
 class MyGame(arcade.Window):
 
-    def __init__(self, width, height):
-        super().__init__(width, height)
+    def __init__(self):
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.grid = Grid(10, 10)
         self.grid.offset_x = 250
         self.grid.offset_y = SCREEN_HEIGHT - Grid.px_height * self.grid.height - 30
         
         presets[1].setup_grid(self.grid)
         
-        self.selectedUI: Optional[GridObject] = None
+        self.selectedUI: GridObject | None = None
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
         self.create_ui()
@@ -32,7 +28,7 @@ class MyGame(arcade.Window):
         self.manager.draw()
         self.grid.draw()
 
-    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+    def on_mouse_press(self, x, y, button, modifiers):
         for obj_x, obj_y, obj in self.grid.objects():
             if not obj.clickable: continue
             obj_x, obj_y = self.grid.get_px_position(obj_x, obj_y)
@@ -65,5 +61,4 @@ class MyGame(arcade.Window):
         """ All the logic to move, and the game logic goes here. """
         pass
 
-game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT)
-arcade.run()
+MyGame().run()
