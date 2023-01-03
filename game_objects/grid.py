@@ -8,16 +8,23 @@ def empty(n: int):
 
 
 class Grid:
-    px_width = 50
-    px_height = 50
+    max_px_size = 50
 
-    def __init__(self, width: int, height: int):
+    def __init__(self):
+        self.width = 0
+        self.height = 0
+        self.grid: list[list[GridObject]] = []
+        self.marked: list[tuple[int, int]] = []
+        self.offset_x = self.offset_y = 0
+        self.px_width = self.px_height = 50
+    
+    def create(self, width: int, height: int): 
+        self.grid = list(map(lambda _: empty(width), empty(height)))
         self.width = width
         self.height = height
-        self.grid: list[list[GridObject]] = list(map(lambda _: empty(width), empty(height)))
-        self.marked: list[tuple[int, int]] = []
-        self.offset_x = 0
-        self.offset_y = 0
+        ratio = 10 / width
+        self.px_width = Grid.max_px_size * ratio
+        self.px_height = Grid.max_px_size * ratio 
 
     def can_go(self, x: int, y: int):
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
@@ -73,7 +80,7 @@ class Grid:
         self.grid[x][y] = EmptySpace()
 
     def get_px_position(self, x: int, y: int):
-        return Grid.px_width * x + Grid.px_width / 2 + self.offset_x, Grid.px_height * y + Grid.px_height / 2 + self.offset_y
+        return self.px_width * x + self.px_width / 2 + self.offset_x, self.px_height * y + self.px_height / 2 + self.offset_y
 
     def draw(self):
         spriteList = arcade.SpriteList()
@@ -82,8 +89,8 @@ class Grid:
                 for node in [EmptySpace(clickable=False) if node.need_ground else None, node]:
                     if node is None:
                         continue
-                    node.sprite.width = Grid.px_width
-                    node.sprite.height = Grid.px_height
+                    node.sprite.width = self.px_width
+                    node.sprite.height = self.px_height
                     node.sprite.position = self.get_px_position(x, y)
                     
                     if not node.last_position or node.last_position == (0, 1):

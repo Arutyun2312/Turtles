@@ -12,9 +12,7 @@ class MyGame(arcade.Window):
 
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.grid = Grid(10, 10)
-        self.grid.offset_x = 250
-        self.grid.offset_y = SCREEN_HEIGHT - Grid.px_height * self.grid.height - 30
+        self.grid = Grid()
         
         presets[1].setup_grid(self.grid)
         
@@ -26,15 +24,18 @@ class MyGame(arcade.Window):
     def on_draw(self):
         self.clear(arcade.color.DARK_BLUE_GRAY)
         self.manager.draw()
+
+        self.grid.offset_x = 250
+        self.grid.offset_y = SCREEN_HEIGHT - self.grid.px_height * self.grid.height - 30
         self.grid.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
         for obj_x, obj_y, obj in self.grid.objects():
             if not obj.clickable: continue
             obj_x, obj_y = self.grid.get_px_position(obj_x, obj_y)
-            obj_x -= Grid.px_width / 2
-            obj_y -= Grid.px_height / 2
-            if not in_rect(obj_x, obj_y, Grid.px_width, Grid.px_height, (x, y)): continue
+            obj_x -= self.grid.px_width / 2
+            obj_y -= self.grid.px_height / 2
+            if not in_rect(obj_x, obj_y, self.grid.px_width, self.grid.px_height, (x, y)): continue
             self.selectedUI = obj
             self.create_ui()
             return
