@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+from utils import is_valid_index
+
 
 class Node():
     """A node class for A* Pathfinding"""
 
-    def __init__(self, parent: Node | None, position: tuple[int, int]):
+    def __init__(self, parent: Node | None, position: tuple[int, int], g=0):
         self.parent = parent
         self.position = position
 
-        self.g = 0
+        self.g = g
         self.h = 0
 
     @property
@@ -18,88 +20,90 @@ class Node():
         return self.g + self.h
 
     def moved(self, dx: int, dy: int):
-        return Node(self, (self.position[0] + dx, self.position[1] + dy))
+        return Node(self, (self.position[0] + dx, self.position[1] + dy), self.g + 1)
 
-    def possibles(self, maze: list[list] | None = None):
+    def possibles(self, calculate_price):
         moves = [(0, -1), (0, 1), (-1, 0), (1, 0)]
         for dx, dy in moves:
             x, y = self.position[0] + dx, self.position[1] + dy
-            if 0 <= x and x < len(maze) and 0 <= y and y < len(maze[x]):
+            if calculate_price(x, y) == 0:
                 yield self.moved(dx, dy)
 
-    def __eq__(self, other: Node):
-        return self.position == other.position
+    def to_list(current):
+        lst = []
+        while current:
+            lst.append(current.position)
+            current = current.parent
+        return lst[::-1]  # Return reversed
+
+    def __eq__(self, other: Node | tuple[int, int]):
+        return self.position == (other.position if isinstance(other, Node) else other)
+
+    def __hash__(self):
+        return hash(self.position)
+
+class AStar:
+    def __init__(self, start: tuple[int, int], end: tuple[int, int], maze: list[list[int]]):
+        self.start = start
+        self.end = end
+        self.maze = maze
+        self.possibles: set[Node] = set()
+        self.closed_list: set[Node] = {}
+        self.current_node: Node | None = None
     
-    def __add__(self, other: Node):
-        return (self.position[0] - other.position[0]) ** 2 + (self.position[1] - other.position[1]) ** 2
+    def reset(self):
+        self.possibles = {Node(None, self.start)}
+        self.closed_list = set()
+
+    @property 
+    def is_done(self):
+        return self.current_node != None and (self.current_node.position == self.end or len(self.possibles) == 0)
+
+    @property
+    def path(self):
+        return self.current_node.to_list() if self.current_node else []
+
+    def new_possibles(self):
+        def calculate_price(x: int, y: int):
+            if not is_valid_index(self.maze, x, y): return 1000
+            if (x, y) in self.closed_list: return 1000
+            return self.maze[x][y]
+        return self.current_node.possibles(calculate_price)
+
+    def add_possible(self, node: Node):
+        # Create the h value
+        node.h = (node.position[0] - self.end[0]) ** 2 + (node.position[1] - self.end[1]) ** 2
+
+        # Add the child to the open list
+        self.possibles.add(node)
+    
+    def move_to(self, node: Node):
+        self.current_node = node
+        self.possibles.discard(node)
+        self.closed_list.add(node)
+    
+    def next_step(self):
+        if self.current_node is None: self.reset()
+
+        # Found the goal
+        if self.is_done: return
+        
+        # Get node with lowest cost
+        node = min(self.possibles, key=lambda n : n.f, default=self.current_node)
+
+        # move to it
+        self.move_to(node)
+
+        # generate new possibles
+        for possible in self.new_possibles():
+            self.add_possible(possible)
 
 
 def astar(maze: list[list[int]], start: tuple[int, int], end: tuple[int, int]):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
-    max_path_length = len(maze) * len(maze[0])
-
-    # Initialize both open and closed list
-    open_list: list[Node] = []
-    closed_list: list[Node] = []
-
-    # Add the start node
-    open_list.append(Node(None, start))
-
-    # Loop until you find the end
-    while 0 < len(open_list) and len(open_list) < max_path_length:
-
-        # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-        for i, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = i
-
-        # Pop current off open list, add to closed list
-        open_list.pop(current_index)
-        closed_list.append(current_node)
-
-        # Found the goal
-        if current_node.position == end:
-            path = []
-            current = current_node
-            while current:
-                path.append(current.position)
-                current = current.parent
-            return path[::-1]  # Return reversed path
-
-        # Generate children
-        children: list[Node] = []
-        for new_node in current_node.possibles(maze):  # Create new nodes
-
-            # Get node position
-            x, y = new_node.position
-
-            # Make sure walkable terrain
-            if maze[x][y]: continue
-
-            # Append
-            children.append(new_node)
-
-        # Loop through children
-        for child in children:
-
-            # Child is on the closed list
-            for closed_child in closed_list:
-                if child == closed_child:
-                    continue
-
-            # Create the f, g, and h values
-            child.g = current_node.g + 1
-            child.h = ((child.position[0] - end[0]) ** 2) + ((child.position[1] - end[1]) ** 2)
-
-            # Child is already in the open list
-            for open_node in open_list:
-                if child == open_node and child.g > open_node.g:
-                    continue
-
-            # Add the child to the open list
-            open_list.append(child)
-    return []
+    astar = AStar(start, end, maze)
+    astar.reset()
+    while not astar.is_done:
+        astar.next_step()
+    return astar.current_node.to_list()

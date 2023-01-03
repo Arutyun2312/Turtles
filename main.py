@@ -15,6 +15,9 @@ class MyGame(arcade.Window):
         self.grid = Grid()
         
         presets[1].setup_grid(self.grid)
+        apple = self.grid.apple
+        for x, y, t in self.grid.turtles:
+            t.reset_astar((x, y), self.grid.get_position(apple), self.grid.grid)
         
         self.selectedUI: GridObject | None = None
         self.manager = arcade.gui.UIManager()
@@ -58,8 +61,7 @@ class MyGame(arcade.Window):
                 )
             )
 
-    def update(self, delta_time):
-        """ All the logic to move, and the game logic goes here. """
+    def on_update(self, delta_time):
         pass
 
 MyGame().run()

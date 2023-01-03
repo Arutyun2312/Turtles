@@ -1,14 +1,17 @@
 import arcade
+from game_objects.apple import Apple
 from game_objects.empty import EmptySpace
 from game_objects.grid_object import GridObject
 from game_objects.obstacle import Obstacle
+from astar import AStar
+from game_objects.turtle import Turtle
 
 def empty(n: int):
     return list(map(lambda _: EmptySpace(), range(n)))
 
 
 class Grid:
-    max_px_size = 50
+    px_size = 500
 
     def __init__(self):
         self.width = 0
@@ -17,14 +20,17 @@ class Grid:
         self.marked: list[tuple[int, int]] = []
         self.offset_x = self.offset_y = 0
         self.px_width = self.px_height = 50
+        self.astars: dict[int, list[AStar]] = {}
+        self.target_astar: AStar | None = None
+        self.spriteList: arcade.SpriteList = None
     
     def create(self, width: int, height: int): 
         self.grid = list(map(lambda _: empty(width), empty(height)))
         self.width = width
         self.height = height
-        ratio = 10 / width
-        self.px_width = Grid.max_px_size * ratio
-        self.px_height = Grid.max_px_size * ratio 
+        self.px_width = Grid.px_size / width
+        self.px_height = Grid.px_size / height
+        self.spriteList = arcade.SpriteList(capacity=width * height)
 
     def can_go(self, x: int, y: int):
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
@@ -33,6 +39,18 @@ class Grid:
         for x, row in enumerate(self.grid):
             for y, node in enumerate(row):
                 yield x, y, node
+
+    @property
+    def turtles(self):
+        for x, y, obj in self.objects():
+            if isinstance(obj, Turtle):
+                yield x, y, obj
+
+    @property
+    def apple(self):
+        for x, y, obj in self.objects():
+            if isinstance(obj, Apple):
+                return obj
     
     def find_first(self, class_or_tuple):
         for _, _, obj in self.objects():
@@ -80,15 +98,19 @@ class Grid:
         self.grid[x][y] = EmptySpace()
 
     def get_px_position(self, x: int, y: int):
-        return self.px_width * x + self.px_width / 2 + self.offset_x, self.px_height * y + self.px_height / 2 + self.offset_y
+        return self.px_width * (x + 0.5) + self.offset_x, self.px_height * (y + 0.5) + self.offset_y
 
     def draw(self):
-        spriteList = arcade.SpriteList()
+        spriteList = self.spriteList
+        spriteList.clear()
         for x, row in enumerate(self.grid):
             for y, node in enumerate(row):
-                for node in [EmptySpace(clickable=False) if node.need_ground else None, node]:
-                    if node is None:
-                        continue
+                nodes: list[GridObject | None] = [
+                    # EmptySpace(clickable=False) if node.need_ground else None,
+                    node
+                ]
+                for node in nodes:
+                    if node is None: continue
                     node.sprite.width = self.px_width
                     node.sprite.height = self.px_height
                     node.sprite.position = self.get_px_position(x, y)
@@ -102,9 +124,11 @@ class Grid:
                     elif node.last_position == (-1, 0):
                         node.sprite.angle = 90
 
-                    if node.can_be_marked: # aka can be marked
-                        node.marked = (x, y) in self.marked
-                        node.sprite.color = (200, 200, 200) if node.marked else arcade.color.WHITE
+                    node.sprite.color = arcade.color.WHITE
+                    if self.target_astar: # aka can be marked
+                        possible = (x, y) in self.target_astar.possibles
+                        path = (x, y) in self.target_astar.path
+                        node.sprite.color = arcade.color.RED if path else (200, 200, 200) if possible else arcade.color.WHITE
 
                     spriteList.append(node.sprite)
         spriteList.draw()
