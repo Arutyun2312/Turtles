@@ -6,7 +6,7 @@ class GridObject:
         self.sprite = sprite
         self.need_ground = need_ground
         self.can_be_eaten = can_be_eaten
-        self.last_position: Optional[tuple(int, int)] = None
+        self.last_position: tuple(int, int) | None = None
         self.can_be_marked = can_be_marked
         self.marked = False
         self.clickable = clickable
