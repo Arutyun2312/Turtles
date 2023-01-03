@@ -29,23 +29,34 @@ def create_turtle_ui(grid: Grid, turtle: Turtle):
     go_up_button.on_click = lambda _ : grid.move_down(turtle)
     v_box.add(go_up_button)
 
-    select_astar_button = arcade.gui.UIFlatButton(text="Select A*", width=100)
-    def on_click(_):
+    def reset_turtle_astar():
         turtle.reset_astar(grid.get_position(turtle), grid.get_position(grid.apple), grid.create_astar_maze())
+
+    def select_turtle():
+        if not turtle.astar: reset_turtle_astar()
         grid.target_astar = turtle.astar
-    select_astar_button.on_click = on_click
-    v_box.add(select_astar_button)
 
     next_step_button = arcade.gui.UIFlatButton(text="Calculate next step", width=100)
-    next_step_button.on_click = lambda _ : turtle.astar.next_step()
+    def on_click(_):
+        select_turtle()
+        turtle.astar.next_step()
+    next_step_button.on_click = on_click
     v_box.add(next_step_button)
 
     all_steps_button = arcade.gui.UIFlatButton(text="Calculate all steps", width=100)
     def on_click1(_):
+        select_turtle()
         while not turtle.astar.is_done:
             turtle.astar.next_step()
     all_steps_button.on_click = on_click1
     v_box.add(all_steps_button)
+
+    reset_astar_button = arcade.gui.UIFlatButton(text="Reset A*", width=100)
+    def on_click2(_):
+        reset_turtle_astar()
+        select_turtle() 
+    reset_astar_button.on_click = on_click2
+    v_box.add(reset_astar_button)
 
     # calculate_button = arcade.gui.UIFlatButton(text="Calculate path", width=100)
     # def on_calculate_path(_):

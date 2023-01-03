@@ -11,26 +11,25 @@ def empty(n: int):
 
 
 class Grid:
-    px_size = 500
+    px_size = 700
 
     def __init__(self):
-        self.width = 0
-        self.height = 0
+        self.width = self.height = 0
         self.grid: list[list[GridObject]] = []
-        self.marked: list[tuple[int, int]] = []
         self.offset_x = self.offset_y = 0
         self.px_width = self.px_height = 50
-        self.astars: dict[int, list[AStar]] = {}
         self.target_astar: AStar | None = None
-        self.spriteList: arcade.SpriteList = None
+        self.sprite_list: arcade.SpriteList = None
     
     def create(self, width: int, height: int): 
-        self.grid = list(map(lambda _: empty(width), empty(height)))
         self.width = width
         self.height = height
+        self.grid = list(map(lambda _: empty(width), empty(height)))
         self.px_width = Grid.px_size / width
         self.px_height = Grid.px_size / height
-        self.spriteList = arcade.SpriteList(capacity=width * height)
+        self.target_astar = None
+        if self.sprite_list: self.sprite_list.clear()
+        self.sprite_list = arcade.SpriteList(capacity=width * height)
 
     def can_go(self, x: int, y: int):
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
@@ -72,25 +71,25 @@ class Grid:
                     return x, y
         raise Exception(f'{obj} is not in the grid')
 
-    def __move(self, obj, dx: int, dy: int):
+    def __move(self, obj: GridObject, dx: int, dy: int):
         x, y = self.get_position(obj)
         success = self.set_position(obj, x + dx, y + dy)
         obj.last_position = (dx, dy)
         return success
 
-    def move_up(self, obj):
+    def move_up(self, obj: GridObject):
         return self.__move(obj, 0, 1)
 
-    def move_down(self, obj):
+    def move_down(self, obj: GridObject):
         return self.__move(obj, 0, -1)
 
-    def move_right(self, obj):
+    def move_right(self, obj: GridObject):
         return self.__move(obj, 1, 0)
 
-    def move_left(self, obj):
+    def move_left(self, obj: GridObject):
         return self.__move(obj, -1, 0)
 
-    def __remove_from_grid(self, obj):
+    def __remove_from_grid(self, obj: GridObject):
         try:
             x, y = self.get_position(obj)
         except:
@@ -101,12 +100,12 @@ class Grid:
         return self.px_width * (x + 0.5) + self.offset_x, self.px_height * (y + 0.5) + self.offset_y
 
     def draw(self):
-        spriteList = self.spriteList
+        spriteList = self.sprite_list
         spriteList.clear()
         for x, row in enumerate(self.grid):
             for y, node in enumerate(row):
                 nodes: list[GridObject | None] = [
-                    # EmptySpace(clickable=False) if node.need_ground else None,
+                    EmptySpace(clickable=False) if node.need_ground else None,
                     node
                 ]
                 for node in nodes:
