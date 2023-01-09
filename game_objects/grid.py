@@ -6,9 +6,8 @@ from game_objects.obstacle import Obstacle
 from astar import AStar
 from game_objects.turtle import Turtle
 
-def empty(n: int):
-    return list(map(lambda _: EmptySpace(), range(n)))
 
+def empty(n: int): return list(map(lambda _: EmptySpace(), range(n)))
 
 class Grid:
     px_size = 700
@@ -20,6 +19,9 @@ class Grid:
         self.px_width = self.px_height = 50
         self.target_astar: AStar | None = None
         self.sprite_list: arcade.SpriteList = None
+
+    def __getitem__(self, key: tuple[int, int]): return self.grid[key[0]][key[1]]
+    def __setitem__(self, key: tuple[int, int], value: GridObject): self.grid[key[0]][key[1]] = value
     
     def create(self, width: int, height: int): 
         self.width = width
@@ -31,7 +33,8 @@ class Grid:
         if self.sprite_list: self.sprite_list.clear()
         self.sprite_list = arcade.SpriteList(capacity=width * height)
 
-    def can_go(self, x: int, y: int):
+    def can_go(self, pos: tuple[int, int]):
+        x, y = pos
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
         
     def objects(self):
@@ -47,7 +50,7 @@ class Grid:
 
     @property
     def apple(self):
-        for x, y, obj in self.objects():
+        for _, _, obj in self.objects():
             if isinstance(obj, Apple):
                 return obj
     
@@ -57,11 +60,14 @@ class Grid:
                 return obj
         return None
 
-    def set_position(self, obj, x: int, y: int):
-        if not self.can_go(x, y):
-            return False
-        self.__remove_from_grid(obj)
-        self.grid[x][y] = obj
+    def set_position(self, obj: GridObject, pos: tuple[int, int]):
+        old_pos = self.get_position(obj)
+
+        if self.can_go(pos): 
+            self.__remove_from_grid(obj)
+            self.grid[pos[0]][pos[1]] = obj
+        
+        if old_pos: obj.last_position = tuple(x-y for x, y in zip(pos, old_pos))
         return True
 
     def get_position(self, obj):
@@ -69,32 +75,25 @@ class Grid:
             for y, node in enumerate(row):
                 if node is obj:
                     return x, y
-        raise Exception(f'{obj} is not in the grid')
 
     def __move(self, obj: GridObject, dx: int, dy: int):
         x, y = self.get_position(obj)
-        success = self.set_position(obj, x + dx, y + dy)
-        obj.last_position = (dx, dy)
-        return success
+        return self.set_position(obj, (x + dx, y + dy))
 
-    def move_up(self, obj: GridObject):
-        return self.__move(obj, 0, 1)
+    def move_up(self, obj: GridObject): return self.__move(obj, 0, 1)
 
-    def move_down(self, obj: GridObject):
-        return self.__move(obj, 0, -1)
+    def move_down(self, obj: GridObject): return self.__move(obj, 0, -1)
 
-    def move_right(self, obj: GridObject):
-        return self.__move(obj, 1, 0)
+    def move_right(self, obj: GridObject): return self.__move(obj, 1, 0)
 
-    def move_left(self, obj: GridObject):
-        return self.__move(obj, -1, 0)
+    def move_left(self, obj: GridObject): return self.__move(obj, -1, 0)
 
     def __remove_from_grid(self, obj: GridObject):
         try:
             x, y = self.get_position(obj)
         except:
             return
-        self.grid[x][y] = EmptySpace()
+        self[x, y] = EmptySpace()
 
     def get_px_position(self, x: int, y: int):
         return self.px_width * (x + 0.5) + self.offset_x, self.px_height * (y + 0.5) + self.offset_y

@@ -1,7 +1,9 @@
 import arcade
 import arcade.gui
+import arcade.key as Keys
 from game_objects.grid_object import GridObject
 from game_objects.grid import Grid
+from game_objects.turtle import Turtle
 from ui.main_ui import create_main_ui
 from ui.maze_presets_ui import create_maze_presets_ui
 from utils import in_rect
@@ -27,7 +29,7 @@ class MyGame(arcade.Window):
         self.grid.offset_y = self.height - self.grid.px_height * self.grid.height - 30
         self.grid.draw()
 
-    def on_mouse_press(self, x, y, button, modifiers):
+    def on_mouse_press(self, x, y, button, modifiers): 
         for obj_x, obj_y, obj in self.grid.objects():
             if not obj.clickable: continue
             obj_x, obj_y = self.grid.get_px_position(obj_x, obj_y)
@@ -38,6 +40,20 @@ class MyGame(arcade.Window):
             self.create_ui()
             return
 
+    def on_key_press(self, symbol, modifiers):
+        if not isinstance(self.selectedUI, Turtle): return
+        match symbol:
+            case Keys.UP:
+                self.grid.move_up(self.selectedUI)
+            case Keys.DOWN:
+                self.grid.move_down(self.selectedUI)
+            case Keys.LEFT:
+                self.grid.move_left(self.selectedUI)
+            case Keys.RIGHT:
+                self.grid.move_right(self.selectedUI)
+            
+        return super().on_key_press(symbol, modifiers)
+
     def create_ui(self):
         self.manager.clear()
         self.manager.add(
@@ -45,7 +61,7 @@ class MyGame(arcade.Window):
                 anchor_x="left",
                 anchor_y="center_y",
                 child=create_main_ui()
-            )
+            ) 
         )
         def on_selected():
             self.selectedUI = None
@@ -65,8 +81,5 @@ class MyGame(arcade.Window):
                     child=create_game_object_ui(self.grid, self.selectedUI)
                 )
             )
-
-    def on_update(self, delta_time):
-        pass
 
 MyGame().run()

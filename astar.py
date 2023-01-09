@@ -30,7 +30,7 @@ class Node():
                 yield self.moved(dx, dy)
 
     def to_list(current):
-        lst = []
+        lst: list[tuple[int, int]] = []
         while current:
             lst.append(current.position)
             current = current.parent
