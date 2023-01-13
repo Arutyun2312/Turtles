@@ -41,16 +41,25 @@ class MyGame(arcade.Window):
             return
 
     def on_key_press(self, symbol, modifiers):
-        if not isinstance(self.selectedUI, Turtle): return
+        turtle1, turtle2 = sorted(self.grid.turtles(), key=lambda t: t.name)
         match symbol:
+            case Keys.W:
+                self.grid.move_up(turtle1)
+            case Keys.S:
+                self.grid.move_down(turtle1)
+            case Keys.A:
+                self.grid.move_left(turtle1)
+            case Keys.D:
+                self.grid.move_right(turtle1)
+
             case Keys.UP:
-                self.grid.move_up(self.selectedUI)
+                self.grid.move_up(turtle2)
             case Keys.DOWN:
-                self.grid.move_down(self.selectedUI)
+                self.grid.move_down(turtle2)
             case Keys.LEFT:
-                self.grid.move_left(self.selectedUI)
+                self.grid.move_left(turtle2)
             case Keys.RIGHT:
-                self.grid.move_right(self.selectedUI)
+                self.grid.move_right(turtle2)
             
         return super().on_key_press(symbol, modifiers)
 

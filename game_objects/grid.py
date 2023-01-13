@@ -58,8 +58,12 @@ class Grid:
         for _, _, obj in self.objects():
             if isinstance(obj, class_or_tuple):
                 return obj
-        return None
-
+    
+    def turtles(self):
+        for _, _, obj in self.objects():
+            if isinstance(obj, Turtle):
+                yield obj
+    
     def set_position(self, obj: GridObject, pos: tuple[int, int]):
         old_pos = self.get_position(obj)
 
