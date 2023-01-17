@@ -151,6 +151,8 @@ class Grid:
                         if astar_node:
                             arcade.draw_text(str(round(astar_node.f)), px_x, px_y, font_size=self.px_height / 3)
                             node.sprite.alpha = 255 / 2
+                    if isinstance(node, Turtle):
+                        node.sprite.color = node.color
                     
         spriteList.draw()
     

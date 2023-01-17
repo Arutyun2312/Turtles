@@ -49,6 +49,7 @@ def create_turtle_ui(grid: Grid, turtle: Turtle):
             if not turtle.automated or not grid.apple:
                 turtle.automated = False
                 arcade.unschedule(schedule)
+                automate()
                 return
             try:
                 x, y = next(path)
@@ -56,7 +57,7 @@ def create_turtle_ui(grid: Grid, turtle: Turtle):
                 turtle.automated = False
                 return
             grid.set_position(turtle, (x, y))
-        arcade.schedule(schedule, 0.1)
+        arcade.schedule(schedule, 0.8)
     automate_button.on_click = lambda _ : automate()
     v_box.add(automate_button)
 

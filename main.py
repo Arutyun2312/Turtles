@@ -12,7 +12,7 @@ from ui.maze_presets import presets
 class MyGame(arcade.Window):
 
     def __init__(self):
-        super().__init__(900, 900, 'lol')
+        super().__init__(900, 900, 'Maze Munch')
         self.grid = Grid()
         presets[0].setup_grid(self.grid)
         self.selectedUI: GridObject | None = None
@@ -33,6 +33,13 @@ class MyGame(arcade.Window):
         self.grid.offset_x = 50
         self.grid.offset_y = self.height - self.grid.px_height * self.grid.height - 30
         self.grid.draw()
+        arcade.draw_rectangle_outline(
+            self.grid.offset_x + self.grid.px_width * self.grid.width / 2, 
+            self.grid.offset_y + self.grid.px_height * self.grid.height / 2, 
+            self.grid.px_width * self.grid.width, 
+            self.grid.px_height * self.grid.height, 
+            arcade.color.BLACK, 3
+        )
 
     def on_mouse_press(self, x, y, button, modifiers): 
         for obj_x, obj_y, obj in self.grid.objects():
@@ -90,5 +97,6 @@ class MyGame(arcade.Window):
             )
 
 MyGame().run()
+
 
 
