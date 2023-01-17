@@ -6,7 +6,7 @@ import arcade
 
 presets = [
      Preset(
-        'Easy', 
+        'Empty', 
         PresetItem(Apple(), (2, 4)),
         PresetItem(Turtle('Turtle 1'), (2, 2)),
         *PresetItem.multiply(lambda: Obstacle(),
@@ -42,7 +42,7 @@ presets = [
         'Medium', 
         PresetItem(Apple(), (11,11)),
         PresetItem(Turtle('Turtle 1'), (7, 19)),
-        PresetItem(Turtle('Turtle 2'), (12, 0)),
+        PresetItem(Turtle('Turtle 2', arcade.color.RED), (12, 0)),
         *PresetItem.multiply(lambda: Obstacle(), (19,8), (18,8), (17,8), (15,8), (15,9), (16,8), (14,9), (13,9), 
         (11,9), (6,9), (5,9), (4,9), (4,10), (11,1), (11,2),
         (18,1), (18,2), (17,1), (19,4), (18,4), (17,4), (16,1), (15,1), (14,1), (13,1), (16,4), (16,3), (15,3), 

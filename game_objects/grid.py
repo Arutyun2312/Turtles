@@ -38,7 +38,7 @@ class Grid:
         x, y = pos
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
 
-    def on_move(self, old_obj: GridObject): pass
+    def on_move(self, old_obj: GridObject, new_obj: GridObject): pass
     def on_hit(self): pass
 
     def objects(self):
@@ -75,7 +75,7 @@ class Grid:
             self.remove_from_grid(obj)
             old_obj = self.grid[pos[0]][pos[1]]
             self.grid[pos[0]][pos[1]] = obj
-            if not silent: self.on_move(old_obj)
+            if not silent: self.on_move(old_obj, obj)
         else:
             if not silent: self.on_hit()
         
@@ -113,7 +113,7 @@ class Grid:
     def set_apple_pos(self, pos: tuple[int, int]=None):
         self.apple and self.remove_from_grid(self.apple)
         pos = pos or choice(list((x,y) for x, y, obj in self.objects() if isinstance(obj, EmptySpace)))
-        self.set_position(Apple(), pos)
+        self.set_position(Apple(), pos, silent=True)
 
     def draw(self):
         spriteList = self.sprite_list
