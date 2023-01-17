@@ -1,3 +1,4 @@
+from random import choice
 import arcade
 from game_objects.apple import Apple
 from game_objects.empty import EmptySpace
@@ -36,7 +37,10 @@ class Grid:
     def can_go(self, pos: tuple[int, int]):
         x, y = pos
         return 0 <= x and x < self.width and 0 <= y and y < self.height and self.grid[x][y].can_be_eaten
-        
+
+    def on_move(self, old_obj: GridObject): pass
+    def on_hit(self): pass
+
     def objects(self):
         for x, row in enumerate(self.grid):
             for y, node in enumerate(row):
@@ -64,12 +68,16 @@ class Grid:
             if isinstance(obj, Turtle):
                 yield obj
     
-    def set_position(self, obj: GridObject, pos: tuple[int, int]):
+    def set_position(self, obj: GridObject, pos: tuple[int, int], silent=False):
         old_pos = self.get_position(obj)
 
         if self.can_go(pos): 
-            self.__remove_from_grid(obj)
+            self.remove_from_grid(obj)
+            old_obj = self.grid[pos[0]][pos[1]]
             self.grid[pos[0]][pos[1]] = obj
+            if not silent: self.on_move(old_obj)
+        else:
+            if not silent: self.on_hit()
         
         if old_pos: obj.last_position = tuple(x-y for x, y in zip(pos, old_pos))
         return True
@@ -92,7 +100,7 @@ class Grid:
 
     def move_left(self, obj: GridObject): return self.__move(obj, -1, 0)
 
-    def __remove_from_grid(self, obj: GridObject):
+    def remove_from_grid(self, obj: GridObject):
         try:
             x, y = self.get_position(obj)
         except:
@@ -101,6 +109,11 @@ class Grid:
 
     def get_px_position(self, x: int, y: int):
         return self.px_width * (x + 0.5) + self.offset_x, self.px_height * (y + 0.5) + self.offset_y
+
+    def set_apple_pos(self, pos: tuple[int, int]=None):
+        self.apple and self.remove_from_grid(self.apple)
+        pos = pos or choice(list((x,y) for x, y, obj in self.objects() if isinstance(obj, EmptySpace)))
+        self.set_position(Apple(), pos)
 
     def draw(self):
         spriteList = self.sprite_list
@@ -127,12 +140,18 @@ class Grid:
                         node.sprite.angle = 90
 
                     node.sprite.color = arcade.color.WHITE
+                    spriteList.append(node.sprite)
+                    node.sprite.alpha = 255
                     if self.target_astar: # aka can be marked
+                        astar_node = next((n for n in self.target_astar.possibles if n == (x, y)), None)
                         possible = (x, y) in self.target_astar.possibles
                         path = (x, y) in self.target_astar.path
                         node.sprite.color = arcade.color.RED if path else (200, 200, 200) if possible else arcade.color.WHITE
-
-                    spriteList.append(node.sprite)
+                        px_x, px_y = self.get_px_position(x, y)
+                        if astar_node:
+                            arcade.draw_text(str(round(astar_node.f)), px_x, px_y, font_size=self.px_height / 3)
+                            node.sprite.alpha = 255 / 2
+                    
         spriteList.draw()
     
     def create_astar_maze(self):

@@ -6,6 +6,15 @@ from ui.maze_preset_object import Preset, PresetItem
 presets = [
      Preset(
         'Easy', 
+        PresetItem(Apple(), (2, 4)),
+        PresetItem(Turtle('Turtle 1'), (2, 2)),
+        *PresetItem.multiply(lambda: Obstacle(),
+
+        ),
+        size=(5, 5)
+    ),
+     Preset(
+        'Easy', 
         PresetItem(Apple(), (10,9)),
         PresetItem(Turtle('Turtle 1'), (0, 0)),
         PresetItem(Turtle('Turtle 2'), (19, 19)),

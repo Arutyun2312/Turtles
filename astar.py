@@ -72,7 +72,7 @@ class AStar:
 
     def add_possible(self, node: Node):
         # Create the h value
-        node.h = (node.position[0] - self.end[0]) ** 2 + (node.position[1] - self.end[1]) ** 2
+        node.h = ((node.position[0] - self.end[0]) ** 2 + (node.position[1] - self.end[1]) ** 2) ** 0.5
 
         # Add the child to the open list
         self.possibles.add(node)

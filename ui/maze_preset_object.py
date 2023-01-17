@@ -14,7 +14,7 @@ class PresetItem:
 
     def setup_grid(self, grid: Grid):
         x, y = self.position
-        grid.set_position(self.obj, (x, y))
+        grid.set_position(self.obj, (x, y), True)
 
 class Preset:
     def __init__(self, name: str, *items: PresetItem, size=(10, 10)):

@@ -13,4 +13,8 @@ def create_game_object_ui(grid: Grid, obj: GridObject):
         label = arcade.gui.UILabel(text=f'{obj.__class__.__name__}: {obj.name}', width=100)
         v_box.add(label)
 
+        apple_button = arcade.gui.UIFlatButton(width=100, text='Set Apple')
+        apple_button.on_click = lambda _ : grid.set_apple_pos(grid.get_position(obj))
+        v_box.add(apple_button)
+
         return v_box
