@@ -1,42 +1,23 @@
-import arcade.gui
-from game_objects.grid_object import GridObject
-from game_objects.grid import Grid
 from game_objects.turtle import Turtle
 from game_objects.apple import Apple
 from game_objects.obstacle import Obstacle
-
-class PresetItem:
-    def __init__(self, obj: GridObject, position: tuple[int, int]):
-        self.obj = obj
-        self.position = position
-    
-    @classmethod
-    def multiply(self, create_obj: GridObject, *positions: tuple[int, int]):
-        for pos in positions:
-            yield PresetItem(create_obj(), pos)
-
-    def setup_grid(self, grid: Grid):
-        x, y = self.position
-        grid.set_position(self.obj, x, y)
-
-class Preset:
-    def __init__(self, name: str, *items: PresetItem, size=(10, 10)):
-        self.name = name
-        self.items = items
-        self.size = size
-
-    def setup_grid(self, grid: Grid):
-        grid.create(self.size[0], self.size[1])
-        for item in self.items:
-            item.setup_grid(grid)
+from ui.maze_preset_object import Preset, PresetItem
+import arcade
 
 presets = [
+     Preset(
+        'Empty', 
+        PresetItem(Apple(), (2, 4)),
+        PresetItem(Turtle('Turtle 1'), (2, 2)),
+        *PresetItem.multiply(lambda: Obstacle(),
+        ),
+        size=(5, 5)
+    ),
      Preset(
         'Easy', 
         PresetItem(Apple(), (10,9)),
         PresetItem(Turtle('Turtle 1'), (0, 0)),
-        (3,5), (2,0), (2,1), (2,3), (2,4), (4,4), (2,4), (0,4), (8,9), (7,7),(7,4), (7,5), (7,2), (6,2),
-        PresetItem(Turtle('Turtle 2'), (19, 19)),
+        PresetItem(Turtle('Turtle 2', arcade.color.RED), (19, 19)),
         *PresetItem.multiply(lambda: Obstacle(), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7), (1,8), (1,9), (1,10), 
         (1,11), (1,12), (1,13), (1,14), (1,15), (1,16), (1,17), (1,18), (3,1), (4,1), (5,1), (6,1), (7,1), (8,1),
         (9,1), (10,1), (11,1), (12,1), (13,1), (14,1), (15,1), (16,1), (17,1), (18,1), (18,2), (18,3), (18,4), (18,5),
@@ -61,7 +42,7 @@ presets = [
         'Medium', 
         PresetItem(Apple(), (11,11)),
         PresetItem(Turtle('Turtle 1'), (7, 19)),
-        PresetItem(Turtle('Turtle 2'), (12, 0)),
+        PresetItem(Turtle('Turtle 2', arcade.color.RED), (12, 0)),
         *PresetItem.multiply(lambda: Obstacle(), (19,8), (18,8), (17,8), (15,8), (15,9), (16,8), (14,9), (13,9), 
         (11,9), (6,9), (5,9), (4,9), (4,10), (11,1), (11,2),
         (18,1), (18,2), (17,1), (19,4), (18,4), (17,4), (16,1), (15,1), (14,1), (13,1), (16,4), (16,3), (15,3), 
@@ -129,7 +110,7 @@ presets = [
         (8,16), (12,14), (10,8), (9,8), (13,11), (10,10), (11,14), (9,12), (10,12), (11,12),),
         size=(20, 20)
     ),
-        Preset(
+    Preset(
         'AI', 
         PresetItem(Apple(), (15,19)),
         PresetItem(Turtle('Turtle 1'), (2, 9)),
@@ -142,8 +123,3 @@ presets = [
         size=(20, 20)
     ),
 ]
-
-def create_maze_presets_ui():    
-    h_box = arcade.gui.UIBoxLayout(vertical=False)
-
-    h_box.add(child)
