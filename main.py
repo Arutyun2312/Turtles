@@ -82,8 +82,14 @@ class Game(arcade.Window):
         if modifiers == Keys.MOD_COMMAND and symbol == Keys.N:
             pos = choice((x, y) for x, y, obj in self.grid.objects() if isinstance(obj, EmptySpace))
             return
+        
+        if symbol == Keys.SPACE and self.selectedUI and isinstance(self.selectedUI, EmptySpace):
+            self.grid.set_position(Obstacle(), self.grid.get_position(self.selectedUI), True)
+            self.selectedUI = None
+            self.create_ui()
+            return
 
-        turtle1, turtle2, *_ = list(sorted(self.grid.turtles(), key=lambda t: t.name)) + [None]
+        turtle1, turtle2, *_ = list(sorted((t for t in self.grid.turtles() if not t.ai), key=lambda t: t.name)) + [None]
         if symbol == Keys.W:
                 self.grid.move_up(turtle1)
         elif symbol == Keys.S:
@@ -128,21 +134,22 @@ class Game(arcade.Window):
                 )
             )
         
-    def unblock(self): 
+    def unblock(self, _): 
         self.block_ai = False
         arcade.unschedule(self.unblock)
 
     def on_update(self, delta_time: float):
         if self.block_ai: return
-        if not self.selectedUI or not isinstance(self.selectedUI, Turtle) or not self.selectedUI.ai: return
         apple = self.grid.apple
-        if not apple: return
-        # turtle = t for t in self.grid.turtles() if t.ai 
-        # turtle.reset_astar(self.grid.get_position(turtle), self.grid.get_position(apple), self.grid.create_astar_maze())
-        # pos = next(turtle.astar.path, None)
-        # if pos:
-        #     self.grid.set_position(turtle, pos)
-        #     self.block_ai = True
-        #     arcade.schedule(self.unblock, 0.7)
+        turtle = next((t for t in self.grid.turtles() if t.ai), None)
+        if not apple or not turtle: return
+        turtle.reset_astar(self.grid.get_position(turtle), self.grid.get_position(apple), self.grid.create_astar_maze())
+        while not turtle.astar.is_done:
+            turtle.astar.next_step()
+        pos = turtle.astar.path[1] if len(turtle.astar.path) > 1 else None
+        if pos:
+            self.grid.set_position(turtle, pos)
+        self.block_ai = True
+        arcade.schedule(self.unblock, 0.7)
 
 Game().run()

@@ -97,13 +97,3 @@ class AStar:
         # generate new possibles
         for possible in self.new_possibles():
             self.add_possible(possible)
-
-
-def astar(maze: list[list[int]], start: tuple[int, int], end: tuple[int, int]):
-    """Returns a list of tuples as a path from the given start to the given end in the given maze"""
-
-    astar = AStar(start, end, maze)
-    astar.reset()
-    while not astar.is_done:
-        astar.next_step()
-    return astar.current_node.to_list()

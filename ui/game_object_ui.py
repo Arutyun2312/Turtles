@@ -28,10 +28,10 @@ def create_game_object_ui(grid: Grid, obj: GridObject, on_set):
             v_box.add(set_obstacle_button)
         elif isinstance(obj, Obstacle):
             set_obstacle_button = arcade.gui.UIFlatButton(width=100, text='Set Empty Space')
-            def on_click(_):
+            def on_click1(_):
                 grid.set_position(EmptySpace(), grid.get_position(obj), True)
                 on_set()
-            set_obstacle_button.on_click = on_click
+            set_obstacle_button.on_click = on_click1
             v_box.add(set_obstacle_button)
 
         return v_box
