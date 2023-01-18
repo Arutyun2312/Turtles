@@ -30,7 +30,7 @@ class Game(arcade.Window):
         self.wall_sound = arcade.load_sound('media/wall.wav')
         self.grid.on_move = self.on_move
         self.grid.on_hit = lambda : self.wall_sound.play()
-        # arcade.load_sound('media/background.wav').play(volume=0.2, loop=True)
+        arcade.load_sound('media/background.wav').play(volume=0.2, loop=True)
 
     def on_draw(self):
         self.clear(arcade.color.DARK_BLUE_GRAY)
