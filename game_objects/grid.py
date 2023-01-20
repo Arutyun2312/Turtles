@@ -24,7 +24,7 @@ class Grid:
     def __getitem__(self, key: tuple[int, int]): return self.grid[key[0]][key[1]]
     def __setitem__(self, key: tuple[int, int], value: GridObject): self.grid[key[0]][key[1]] = value
     
-    def create(self, width: int, height: int): 
+    def create(self, width: int, height: int):
         self.width = width
         self.height = height
         self.grid = list(map(lambda _: empty(width), empty(height)))
@@ -41,30 +41,30 @@ class Grid:
     def on_move(self, old_obj: GridObject, new_obj: GridObject): pass
     def on_hit(self): pass
 
-    def objects(self):
+    def __iter__(self):
         for x, row in enumerate(self.grid):
             for y, node in enumerate(row):
                 yield x, y, node
 
     @property
     def turtles(self):
-        for x, y, obj in self.objects():
+        for x, y, obj in self:
             if isinstance(obj, Turtle):
                 yield x, y, obj
 
     @property
     def apple(self):
-        for _, _, obj in self.objects():
+        for _, _, obj in self:
             if isinstance(obj, Apple):
                 return obj
     
     def find_first(self, class_or_tuple):
-        for _, _, obj in self.objects():
+        for _, _, obj in self:
             if isinstance(obj, class_or_tuple):
                 return obj
     
     def turtles(self):
-        for _, _, obj in self.objects():
+        for _, _, obj in self:
             if isinstance(obj, Turtle):
                 yield obj
     
@@ -112,7 +112,7 @@ class Grid:
 
     def set_apple_pos(self, pos: tuple[int, int]=None):
         self.apple and self.remove_from_grid(self.apple)
-        pos = pos or choice(list((x,y) for x, y, obj in self.objects() if isinstance(obj, EmptySpace)))
+        pos = pos or choice(list((x,y) for x, y, obj in self if isinstance(obj, EmptySpace)))
         self.set_position(Apple(), pos, silent=True)
 
     def draw(self):
