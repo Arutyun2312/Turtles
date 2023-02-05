@@ -1,81 +1,51 @@
 # https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
 
 from __future__ import annotations
+from helpers import Position, game
 
-from utils import is_valid_index
+def grid(): return game().grid
 
-
-class Node():
+class Node(Position):
     """A node class for A* Pathfinding"""
-
-    def __init__(self, parent: Node | None, position: tuple[int, int], g=0):
-        self.parent = parent
-        self.position = position
-
-        self.g = g
-        self.h = 0
+    g = 0
+    parent: Node | None = None
 
     @property
-    def f(self):
-        return self.g + self.h
+    def f(self): return self.g + self.distance_to(grid().apple.position)
 
-    def moved(self, dx: int, dy: int):
-        return Node(self, (self.position[0] + dx, self.position[1] + dy), self.g + 1)
-
-    def possibles(self, calculate_price):
-        moves = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-        for dx, dy in moves:
-            x, y = self.position[0] + dx, self.position[1] + dy
-            if calculate_price(x, y) == 0:
-                yield self.moved(dx, dy)
+    def possibles(self):
+        moves: list[Position] = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+        for move in moves:
+            new_node = self + move
+            if grid().calculate_price(new_node) == 0:
+                new_node.parent = self
+                new_node.g = self.g + 1
+                yield new_node
 
     def to_list(current):
-        lst: list[tuple[int, int]] = []
+        lst: list[Node] = []
         while current:
-            lst.append(current.position)
+            lst.append((current))
             current = current.parent
         return lst[::-1]  # Return reversed
 
-    def __eq__(self, other: Node | tuple[int, int]):
-        return self.position == (other.position if isinstance(other, Node) else other)
-
-    def __hash__(self):
-        return hash(self.position)
-
 class AStar:
-    def __init__(self, start: tuple[int, int], end: tuple[int, int], maze: list[list[int]]):
+    def __init__(self, start: Position):
         self.start = start
-        self.end = end
-        self.maze = maze
-        self.possibles: set[Node] = set()
-        self.closed_list: set[Node] = {}
-        self.current_node: Node | None = None
-    
-    def reset(self):
-        self.possibles = {Node(None, self.start)}
+        self.possibles = {Node(self.start)}
         self.closed_list = set()
+        self.current_node: Node | None = None
+
+    @property
+    def end(self): return grid().apple.position
 
     @property 
     def is_done(self):
-        return self.current_node != None and (self.current_node.position == self.end or len(self.possibles) == 0)
+        return self.current_node and (self.current_node == self.end or len(self.possibles) == 0)
 
     @property
     def path(self):
         return self.current_node.to_list() if self.current_node else []
-
-    def new_possibles(self):
-        def calculate_price(x: int, y: int):
-            if not is_valid_index(self.maze, x, y): return 1000
-            if (x, y) in self.closed_list: return 1000
-            return self.maze[x][y]
-        return self.current_node.possibles(calculate_price)
-
-    def add_possible(self, node: Node):
-        # Create the h value
-        node.h = ((node.position[0] - self.end[0]) ** 2 + (node.position[1] - self.end[1]) ** 2) ** 0.5
-
-        # Add the child to the open list
-        self.possibles.add(node)
     
     def move_to(self, node: Node):
         self.current_node = node
@@ -83,8 +53,6 @@ class AStar:
         self.closed_list.add(node)
     
     def next_step(self):
-        if self.current_node is None: self.reset()
-
         # Found the goal
         if self.is_done: return
         
@@ -95,5 +63,19 @@ class AStar:
         self.move_to(node)
 
         # generate new possibles
-        for possible in self.new_possibles():
-            self.add_possible(possible)
+        for possible in self.current_node.possibles():
+            if possible in self.closed_list: continue
+            self.possibles.add(possible)
+
+    def all_steps(self, start: Position):
+        if self.start != start:
+            path = self.path
+            if start in self.path: # if start in path, then cut path. No need to recalculate
+                node = next(node for node in path if node == start)
+                node.parent = None
+                self.current_node = path[-1]
+            else: # otherwise recalculate
+                self.current_node = None
+                self.possibles.add(Node(start))
+        while not self.is_done:
+            self.next_step()

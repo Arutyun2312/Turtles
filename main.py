@@ -2,154 +2,123 @@ from random import choice
 import arcade
 import arcade.gui
 import arcade.key as Keys
-from game_objects.apple import Apple
-from game_objects.empty import EmptySpace
-from game_objects.grid_object import GridObject
+from astar import AStar
+from astar_drawer import AStarDrawer
+from game_objects.objects import *
 from game_objects.grid import Grid
-from game_objects.obstacle import Obstacle
-from game_objects.turtle import Turtle
-from ui.maze_presets_ui import create_maze_presets_ui
-from utils import in_rect
-from ui.game_object_ui import create_game_object_ui
-from ui.maze_presets import presets
+from helpers import *
+from ui.main_ui import MainUI
+from ui.manager import UIManager
+from ui.game_object_ui import *
 
 class Game(arcade.Window):
+    grid = Grid()
+    floor = Grid()
+    astar_drawer = AStarDrawer([grid, floor])
+    selectedUI: GridObject | None = None
+    block_ai = False
+    step_sound = arcade.load_sound('media/step.wav')
+    apple_sound = arcade.load_sound('media/apple.wav')
+    wall_sound = arcade.load_sound('media/wall.wav')
 
     def __init__(self):
-        super().__init__(950, 850, 'Maze Munch')
-        self.grid = Grid()
-        presets[0].setup_grid(self.grid)
-        self.block_ai = False
-        self.selectedUI: GridObject | None = None
-        self.manager = arcade.gui.UIManager()
-        self.manager.enable()
-        self.score: dict[str, int] = {}
-        self.create_ui()
-        self.step_sound = arcade.load_sound('media/step.wav')
-        self.apple_sound = arcade.load_sound('media/apple.wav')
-        self.wall_sound = arcade.load_sound('media/wall.wav')
+        super().__init__(850, 850, 'Maze Munch', resizable=True)
         self.grid.on_move = self.on_move
-        self.grid.on_hit = lambda : self.wall_sound.play()
-        arcade.load_sound('media/background.wav').play(volume=0.2, loop=True)
+        self.grid.on_hit = self.on_hit
+        self.silent = False
+        self.manager = UIManager()
+        self.mainUI = MainUI()
+        self.old_apple_position: Position = None
+        # arcade.load_sound('media/background.wav').play(volume=0.2, loop=True)
+    
+    @property
+    def size(self): return Size(self.width, self.height)
+
+    def on_resize(self, width: float, height: float):
+        self.astar_drawer.update_positions()
+        return super().on_resize(width, height)
 
     def on_draw(self):
-        self.clear(arcade.color.DARK_BLUE_GRAY)
-        self.manager.draw()
-
-        self.grid.offset_x = (self.width - self.grid.px_size) / 2
-        self.grid.offset_y = self.height - self.grid.px_height * self.grid.height - 30
+        self.clear()
+        if self.grid.size != self.floor.size:
+            spaces = []
+            for x, y in grid_like_iteration(self.grid.size):
+                space = EmptySpace(False)
+                space.position = Position(x, y)
+                spaces.append(space)
+            self.floor.create(*self.grid.size, spaces)
+        self.astar_drawer.draw()
+        self.floor.draw()
         self.grid.draw()
-        arcade.draw_rectangle_outline(
-            self.grid.offset_x + self.grid.px_width * self.grid.width / 2, 
-            self.grid.offset_y + self.grid.px_height * self.grid.height / 2, 
-            self.grid.px_width * self.grid.width, 
-            self.grid.px_height * self.grid.height, 
-            arcade.color.BLACK, 3
-        )
+        if self.manager.current:
+            arcade.draw_rectangle_filled(self.width / 2, self.height / 2, self.width, self.height, [*arcade.color.BLACK, 255 / 2])
+            self.manager.draw()
+
+    def on_hit(self):
+        if self.silent: return
+        self.wall_sound.play()
 
     def on_move(self, old_obj: GridObject, new_obj: GridObject):
+        if self.silent: return
         if isinstance(old_obj, Apple):
             self.apple_sound.play(volume=0.2)
-            self.grid.set_apple_pos()
+            self.grid.apple.position = choice([pos for pos in grid_like_iteration(self.grid.size) if not self.grid[pos]])
         else:
             self.step_sound.play(volume=0.2)
-        
-        if isinstance(new_obj, Turtle) and isinstance(old_obj, Apple):
-            self.score[new_obj.name] = self.score.get(new_obj.name, 0) + 1
-            self.create_ui()
 
-    def on_mouse_press(self, x, y, button, modifiers): 
-        for obj_x, obj_y, obj in self.grid.objects():
-            if not obj.clickable: continue
-            obj_x, obj_y = self.grid.get_px_position(obj_x, obj_y)
-            obj_x -= self.grid.px_width / 2
-            obj_y -= self.grid.px_height / 2
-            if not in_rect(obj_x, obj_y, self.grid.px_width, self.grid.px_height, (x, y)): continue
-            self.selectedUI = obj
-            self.create_ui()
+        if isinstance(new_obj, Turtle) and isinstance(old_obj, Apple):
+            new_obj.score += 1
+            if isinstance(self.manager.current, TurtleUI):
+                self.manager.rerender()
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        if self.manager.current: return
+        mouse_position = Position(x, y)
+        for obj in self.grid:
+            px_position = self.grid.node_px_position(obj.position) - self.grid.node_px_size / 2
+            if not is_inside(px_position, self.grid.node_px_size, mouse_position): continue
+            if isinstance(obj, Turtle):
+                self.manager.push(TurtleUI(obj))
+            elif isinstance(obj, Obstacle):
+                self.manager.push(ObstacleUI(obj))
             return
+        
+        self.manager.push(EmptySpaceUI(mouse_position))
 
     def on_key_press(self, symbol, modifiers):
-        if modifiers == Keys.MOD_SHIFT and symbol == Keys.C:
-            obstacles = ((x, y) for x, y, obj in self.grid.objects() if isinstance(obj, Obstacle))
-            print(', '.join(map(lambda pos: f'({pos[0]}, {pos[1]})', obstacles)))
-            return
+        super().on_key_press(symbol, modifiers)
         
-        if modifiers == Keys.MOD_COMMAND and symbol == Keys.R:
-            self.create_ui()
-            return
+        self.manager.on_key_press(symbol, modifiers)
+        if self.manager.current: return
 
-        if modifiers == Keys.MOD_COMMAND and symbol == Keys.N:
-            pos = choice((x, y) for x, y, obj in self.grid.objects() if isinstance(obj, EmptySpace))
-            return
-        
-        if symbol == Keys.SPACE and self.selectedUI and isinstance(self.selectedUI, EmptySpace):
-            self.grid.set_position(Obstacle(), self.grid.get_position(self.selectedUI), True)
-            self.selectedUI = None
-            self.create_ui()
-            return
-
-        turtle1, turtle2, *_ = list(sorted((t for t in self.grid.turtles() if not t.ai), key=lambda t: t.name)) + [None]
-        if symbol == Keys.W:
-                self.grid.move_up(turtle1)
-        elif symbol == Keys.S:
-                self.grid.move_down(turtle1)
-        elif symbol == Keys.A:
-                self.grid.move_left(turtle1)
-        elif symbol == Keys.D:
-                self.grid.move_right(turtle1)
-        elif symbol == Keys.UP:
-                self.grid.move_up(turtle2)
-        elif symbol == Keys.DOWN:
-                self.grid.move_down(turtle2)
-        elif symbol == Keys.LEFT:
-                self.grid.move_left(turtle2)
-        elif symbol == Keys.RIGHT:
-                self.grid.move_right(turtle2)
-            
-        return super().on_key_press(symbol, modifiers)
-
-    def create_ui(self):
-        self.manager.clear()
-        def on_selected():
-            self.selectedUI = None
-            self.score = dict(map(lambda t: (t.name, 0), self.grid.turtles()))
-            self.create_ui()
-        self.manager.add(
-            arcade.gui.UIAnchorWidget(
-                anchor_x="center",
-                anchor_y='bottom',
-                child=create_maze_presets_ui(self.grid, on_selected, self.score)
-            )
-        )
-        if self.selectedUI:
-            def on_set(): 
-                self.selectedUI = None 
-                self.create_ui()
-            self.manager.add(
-                arcade.gui.UIAnchorWidget(
-                    anchor_x="right",
-                    anchor_y="center_y",
-                    child=create_game_object_ui(self.grid, self.selectedUI, on_set)
-                )
-            )
+        turtle1, turtle2, *_ = list(sorted((t for t in self.grid.turtles if not t.ai), key=lambda t: t.name)) + [None, None]
+        mapped_symbol = {Keys.W: Keys.UP, Keys.S: Keys.DOWN, Keys.A: Keys.LEFT, Keys.D: Keys.RIGHT}.get(symbol, symbol)
+        turtle = turtle1 if mapped_symbol == symbol else turtle2
+        if turtle:
+            if mapped_symbol == Keys.UP:
+                self.grid.set_position(turtle, turtle.position + (0, 1))
+            elif mapped_symbol == Keys.DOWN:
+                self.grid.set_position(turtle, turtle.position + (0, -1))
+            elif mapped_symbol == Keys.LEFT:
+                self.grid.set_position(turtle, turtle.position + (-1, 0))
+            elif mapped_symbol == Keys.RIGHT:
+                self.grid.set_position(turtle, turtle.position + (1, 0))
         
     def unblock(self, _): 
         self.block_ai = False
         arcade.unschedule(self.unblock)
 
-    def on_update(self, delta_time: float):
+    def on_update(self, delta_time):
         if self.block_ai: return
-        apple = self.grid.apple
-        turtle = next((t for t in self.grid.turtles() if t.ai), None)
-        if not apple or not turtle: return
-        turtle.reset_astar(self.grid.get_position(turtle), self.grid.get_position(apple), self.grid.create_astar_maze())
-        while not turtle.astar.is_done:
-            turtle.astar.next_step()
-        pos = turtle.astar.path[1] if len(turtle.astar.path) > 1 else None
-        if pos:
-            self.grid.set_position(turtle, pos)
+        turtle = next((t for t in self.grid.turtles if t.ai), None)
+        if not turtle: return
+        if self.old_apple_position != self.grid.apple.position:
+            self.old_apple_position = self.grid.apple.position
+            turtle.create_astar()
+        turtle.astar.all_steps(turtle.position)
+        if len(turtle.astar.path) > 1:
+            self.grid.set_position(turtle, turtle.astar.path[1])
         self.block_ai = True
-        arcade.schedule(self.unblock, 0.7)
+        arcade.schedule(self.unblock, 0.5)
 
 Game().run()
