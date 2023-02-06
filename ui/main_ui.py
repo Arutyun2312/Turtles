@@ -1,9 +1,9 @@
 from pathlib import Path
 import arcade.color as Color
 from game_objects.objects import *
-from ui.manager import UIManagerRepresent, h_stack, v_stack
+from ui.manager import *
 import arcade.gui as gui
-import json as js
+import json
 from helpers import *
 
 def get_name(path: Path): return path.name[:path.name.index('.')]
@@ -69,7 +69,7 @@ class MainUI(UIManagerRepresent):
     
     def click_open_preset(self, path: Path):
         with open(path) as file:
-            size, objects = js.load(file, object_hook=self.object_hook)
+            size, objects = json.load(file, object_hook=self.object_hook)
         self.game.grid.create(*size, objects)
         self.opened_path = path
         self.text_field.text = get_name(path)
@@ -86,7 +86,7 @@ class MainUI(UIManagerRepresent):
             if isinstance(obj, Obstacle):
                 obstacles.append(obj.position)
         with open(self.opened_path, 'w') as file:
-            js.dump({ 'turtles': turtles, 'obstacles': obstacles, 'apple': apple, 'size': self.game.grid.size }, file, sort_keys=True, indent=4)
+            json.dump({ 'turtles': turtles, 'obstacles': obstacles, 'apple': apple, 'size': self.game.grid.size }, file, sort_keys=True, indent=4)
         self.pop()
 
     def click_stop_all_ai(self):

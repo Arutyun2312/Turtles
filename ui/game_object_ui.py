@@ -1,7 +1,7 @@
 import arcade.gui as gui
 from game_objects.objects import *
 from helpers import Position
-from ui.manager import UIManagerRepresent, populate, v_stack
+from ui.manager import *
 
 class ObstacleUI(UIManagerRepresent):
     def __init__(self, obj: Obstacle):
@@ -15,7 +15,7 @@ class ObstacleUI(UIManagerRepresent):
     @property
     def list(self):
         yield self.create_label(f'{self.obj.__class__.__name__}')
-        yield self.create_button('Remove', self.click_set_empty, key_press=self.keys.SPACE)
+        yield self.create_button('Remove (Space)', self.click_set_empty, key_press=self.keys.SPACE)
 
     def click_set_empty(self):
         self.game.grid.remove(self.obj)
@@ -71,6 +71,7 @@ class TurtleUI(UIManagerRepresent):
         yield self.create_button('Calculate all steps', self.click_calculate_all_steps)
         yield self.create_button('Reset A*', self.click_reset_astar)
         yield self.create_button('Automate', self.click_automate)
+        yield self.create_button('Remove (Space)', self.click_remove, key_press=self.keys.SPACE)
     
     def click_calculate_next(self):
         self.select_turtle()
@@ -98,6 +99,10 @@ class TurtleUI(UIManagerRepresent):
     def click_automate(self):
         self.turtle.ai = not self.turtle.ai
         if self.turtle.ai: self.turtle.create_astar()
+
+    def click_remove(self):
+        self.grid.remove(self.turtle)
+        self.pop()
 
     def select_turtle(self):
         if not self.turtle.astar: self.turtle.create_astar()

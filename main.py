@@ -2,7 +2,6 @@ from random import choice
 import arcade
 import arcade.gui
 import arcade.key as Keys
-from astar import AStar
 from astar_drawer import AStarDrawer
 from game_objects.objects import *
 from game_objects.grid import Grid
@@ -10,6 +9,7 @@ from helpers import *
 from ui.main_ui import MainUI
 from ui.manager import UIManager
 from ui.game_object_ui import *
+import pyglet
 
 class Game(arcade.Window):
     grid = Grid()
@@ -87,6 +87,10 @@ class Game(arcade.Window):
 
     def on_key_press(self, symbol, modifiers):
         super().on_key_press(symbol, modifiers)
+
+        if symbol == Keys.S and modifiers == Keys.MOD_COMMAND:
+            pyglet.image.get_buffer_manager().get_color_buffer().save('image.png')
+            return
         
         self.manager.on_key_press(symbol, modifiers)
         if self.manager.current: return
